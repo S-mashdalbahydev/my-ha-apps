@@ -1,8 +1,0 @@
-name: "Ollama Service"
-version: "0.1.0"
-slug: "ollama_service"
-arch:
-  - aarch64
-startup: services
-init: false
-image: ghcr.io/ollama/ollama:latest
