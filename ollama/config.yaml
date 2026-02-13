@@ -10,7 +10,7 @@ arch:
 
 # Pull an existing image instead of building
 # Pick a real tag from Docker Hub for Ollama to make it static (avoid 'latest' if you want stability)
-image: "ollama/ollama:<TAG>"
+image: "ollama/ollama:latest"
 
 startup: services
 ports:
