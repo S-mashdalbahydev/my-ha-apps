@@ -1,8 +1,17 @@
-name: "Ollama Service"
+name: "Ollama Service (Local)"
 version: "0.1.0"
 slug: "ollama_service"
+
+description: "Runs Ollama locally"
+
 arch:
   - aarch64
+
 startup: services
 init: false
-image: ghcr.io/ollama/ollama:latest
+
+ports:
+  11434/tcp: 11434
+
+map:
+  - addon_config:rw
