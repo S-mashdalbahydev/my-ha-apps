@@ -1,7 +1,7 @@
 ARG BUILD_FROM
 FROM $BUILD_FROM
 
-RUN apk add --no-cache curl bash ca-certificates
+RUN apk add --no-cache curl bash ca-certificates zstd
 
 RUN curl -fsSL https://ollama.com/install.sh | sh
 
