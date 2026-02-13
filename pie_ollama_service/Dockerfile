@@ -1,12 +1,19 @@
-FROM ollama/ollama:latest
+name: "Ollama Service (Local)"
+description: "Runs Ollama locally on Home Assistant OS and stores models in /data."
+version: "0.1.0"
+slug: "ollama_service"
+init: false
+startup: services
+arch:
+  - aarch64
+  - amd64
 
-# Tools for reading /data/options.json
-RUN apt-get update && apt-get install -y jq && rm -rf /var/lib/apt/lists/*
+# Keep it INTERNAL by default (recommended).
+# If you want to reach Ollama from your LAN, uncomment:
+# ports:
+#   11434/tcp: 11434
 
-COPY run.sh /run.sh
-RUN chmod +x /run.sh
-
-# Ollama API default port
-EXPOSE 11434
-
-CMD ["/run.sh"]
+options:
+  models_path: "/data/models"
+schema:
+  models_path: str
