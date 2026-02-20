@@ -4,6 +4,7 @@ set -e
 MODEL="$(bashio::config 'model')"
 
 # Store models in /data so they persist
+export OLLAMA_HOST="0.0.0.0:11434"
 export OLLAMA_MODELS="/data/ollama"
 
 # Start Ollama server in background
