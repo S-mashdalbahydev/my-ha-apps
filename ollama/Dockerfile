@@ -1,9 +1,10 @@
-ARG BUILD_FROM
+ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base:latest
 FROM $BUILD_FROM
 
-# Install curl if not present, then install Ollama
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# Alpine uses apk, not apt-get
+RUN apk add --no-cache curl bash
 
+# Install Ollama
 RUN curl -fsSL https://ollama.com/install.sh | sh
 
 COPY run.sh /
