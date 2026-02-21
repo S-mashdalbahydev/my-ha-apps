@@ -1,0 +1,38 @@
+name: "Local RAG Agent (SearXNG + Ollama)"
+slug: "local_rag_agent"
+description: "HTTP agent that answers questions using SearXNG snippets + Ollama."
+version: "0.1.0"
+init: false
+
+arch:
+  - aarch64
+  - amd64
+
+startup: services
+
+# Expose locally so HA Core (and you) can call it.
+# You can remove ports later and only use internal access, but for testing this is easiest.
+ports:
+  5055/tcp: 5055
+
+webui: "http://[HOST]:[PORT:5055]"
+
+options:
+  searx_url: "http://searxng:8080/search"
+  ollama_url: "http://ollama:11434/api/chat"
+  model: "SmolLM2:360M"
+  max_results: 5
+  ctx_char_limit: 2500
+  temperature: 0.2
+  num_predict: 80
+  num_ctx: 8192
+
+schema:
+  searx_url: str
+  ollama_url: str
+  model: str
+  max_results: int
+  ctx_char_limit: int
+  temperature: float
+  num_predict: int
+  num_ctx: int
