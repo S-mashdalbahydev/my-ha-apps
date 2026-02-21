@@ -1,0 +1,30 @@
+use_default_settings: true
+
+search:
+  formats:
+    - html
+    - json
+
+server:
+  # MUST be long random in production (or set via env SEARXNG_SECRET)
+  secret_key: "REPLACE_WITH_LONG_RANDOM_SECRET"
+  public_instance: false
+  limiter: false
+  image_proxy: true
+
+# Optional: only include ONE of these sections, depending on what you run:
+
+# If you run Valkey (recommended if you ever enable limiter later)
+# valkey:
+#   url: "valkey://valkey:6379/0"
+
+# If you run Redis instead
+# redis:
+#   url: "redis://redis:6379/0"
+
+outgoing:
+  request_timeout: 10.0
+  max_request_timeout: 15.0
+  pool_connections: 100
+  pool_maxsize: 20
+  enable_http2: true

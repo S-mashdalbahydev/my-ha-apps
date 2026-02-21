@@ -1,0 +1,40 @@
+name: "SearXNG"
+slug: "searxng"
+description: "Privacy-respecting metasearch engine (official container) for Home Assistant."
+version: "0.1.0"
+
+arch:
+  - amd64
+  - aarch64
+
+startup: services
+init: false
+
+# Show it in HA sidebar as a panel
+ingress: true
+ingress_port: 8080
+panel_icon: mdi:magnify
+
+# IMPORTANT:
+# We do NOT expose a host port by default (safer).
+# Your other add-on (agent) can call it internally via: http://searxng:8080/search?...
+# If someone wants LAN access, they can put a reverse proxy or change the add-on themselves.
+
+map:
+  - addon_config:rw
+
+options:
+  base_url: ""
+  instance_name: "SearXNG (Home Assistant)"
+  public_instance: false
+  limiter: false
+  valkey_url: ""
+  secret: ""
+
+schema:
+  base_url: str?
+  instance_name: str?
+  public_instance: bool
+  limiter: bool
+  valkey_url: str?
+  secret: str?
