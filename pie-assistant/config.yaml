@@ -1,5 +1,5 @@
-name: "Local RAG Agent (SearXNG + Ollama)"
-slug: "local_rag_agent"
+name: "pie assistant"
+slug: "pie_assistant"
 description: "HTTP agent that answers questions using SearXNG snippets + Ollama."
 version: "0.1.0"
 init: false
