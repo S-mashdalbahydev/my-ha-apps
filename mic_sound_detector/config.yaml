@@ -1,0 +1,15 @@
+name: "Mic Sound Detector"
+description: "Logs when sound is detected - mic tester"
+version: "1.0.0"
+slug: "mic_sound_detector"
+init: false
+
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+
+startup: services
+audio: true
