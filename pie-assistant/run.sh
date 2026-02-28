@@ -17,4 +17,9 @@ bashio::log.info "SEARX_URL=${SEARX_URL}"
 bashio::log.info "OLLAMA_URL=${OLLAMA_URL}"
 bashio::log.info "MODEL=${MODEL}"
 
-exec python3 /app/server.py
+exec gunicorn \
+  --workers 2 \
+  --bind 0.0.0.0:5055 \
+  --access-logfile - \
+  --error-logfile - \
+  server:app

@@ -12,10 +12,9 @@ startup: services
 
 # Expose locally so HA Core (and you) can call it.
 # You can remove ports later and only use internal access, but for testing this is easiest.
-ports:
-  5055/tcp: 5055
-
-webui: "http://[HOST]:[PORT:5055]"
+ingress: true
+ingress_port: 5055
+panel_icon: mdi:robot
 
 options:
   searx_url: "http://searxng:8080/search"

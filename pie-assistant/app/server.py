@@ -151,6 +151,3 @@ def ask():
     })
 
 
-if __name__ == "__main__":
-    # Listen on all interfaces so HA can reach it
-    app.run(host="0.0.0.0", port=5055)
