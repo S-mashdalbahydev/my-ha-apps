@@ -18,9 +18,7 @@ NUM_PREDICT = int(os.getenv("NUM_PREDICT", "80"))
 NUM_CTX = int(os.getenv("NUM_CTX", "8192"))
 
 FRESH_KEYWORDS = [
-    "latest", "last", "current", "now", "recent",
-    "today", "this year", "this month", "this week",
-    "updated", "new", "live"
+
 ]
 
 YEAR_RE = re.compile(r"\b(20\d{2})\b")
@@ -94,9 +92,10 @@ def generate_answer(question: str, snippets):
         "Do NOT repeat the question.\n"
         "Do NOT reference the context explicitly.\n"
         "Only output the final humanized answer based on the context."
+
     )
 
-    user_prompt = f"Here is the context:\n{context_text}\n\nQuestion:\n{question}\n\nGenerate the final answer and make the answer straight forward."
+    user_prompt = f"Here is the context:\n{context_text}\n\nQuestion:\n{question}\n\nGenerate the final answer and make the answer straight forward. if you dont find answer in the context, say i didnt find the answer in the web"
 
     payload = {
         "model": MODEL,
