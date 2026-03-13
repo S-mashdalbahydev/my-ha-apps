@@ -87,8 +87,7 @@ def generate_answer(question: str, snippets):
 
     system_prompt = (
         "You are a helpful assistant.\n"
-        "Output ONLY the final answer as a single sentence.\n"
-        "Do NOT include context, explanations, reasoning, or descriptions.\n"
+        "give a short and concise answer.\n"
         "Do NOT repeat the question.\n"
         "Do NOT reference the context explicitly.\n"
         "Only output the final humanized answer based on the context."
