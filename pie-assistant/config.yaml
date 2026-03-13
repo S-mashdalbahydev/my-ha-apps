@@ -1,7 +1,7 @@
 name: "pie assistant"
 slug: "pie_assistant"
 description: "HTTP agent that answers questions using SearXNG snippets + Ollama."
-version: "0.1.0"
+version: "0.1.1"
 init: false
 
 arch:
