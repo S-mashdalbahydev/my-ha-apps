@@ -63,10 +63,22 @@ def searx_snippet_search(query: str, max_results: int = 5):
 
     data = r.json()
     results = []
+    domain_counts = {}
     for item in data.get("results", []):
         title = item.get("title") or ""
         snippet = item.get("content") or item.get("snippet") or ""
         url = item.get("url") or ""
+
+        # Skip YouTube URLs entirely
+        if re.search(r"(youtube\.com|youtu\.be)", url, re.IGNORECASE):
+            continue
+
+        # Limit to 2 results per domain
+        domain = re.sub(r"^www\.", "", (url.split("/")[2] if "//" in url else ""))
+        if domain_counts.get(domain, 0) >= 2:
+            continue
+        domain_counts[domain] = domain_counts.get(domain, 0) + 1
+
         results.append({"title": title, "snippet": snippet, "url": url})
         if len(results) >= max_results:
             break
@@ -147,5 +159,3 @@ def ask():
         "timing": {"search_s": round(search_time, 3), "llm_s": round(llm_time, 3)},
         "sources": snippets,   # keep this for debugging; Assist integration can ignore it
     })
-
-
