@@ -1,6 +1,6 @@
 import os
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 class HAClient:
     def __init__(self):
@@ -29,27 +29,39 @@ class HAClient:
             return []
         
 #  show the history of a specific device for the last n days(return raw data)
-    def get_history(self, entity_id: str, days: int = 14):
-      
-        try:
-            start_time = (datetime.now() - timedelta(days=days)).isoformat()
-            response = requests.get(
-                f"{self.base_url}/history/period/{start_time}",
-                headers=self.headers,
-                params={"filter_entity_id": entity_id}
-            )
-            if response.status_code == 200:
-                data = response.json()
-                print(f"[ha_client] get_history raw type: {type(data)}")
-                print(f"[ha_client] get_history raw preview: {str(data)[:500]}")
-                return data
-            else:
-                print(f"[ha_client] get_history failed: {response.status_code}")
-                print(f"[ha_client] get_history body: {response.text[:500]}")
-                return []
-        except Exception as e:
-            print(f"[ha_client] get_history error: {e}")
+def get_history(self, entity_id: str, days: int = 14):
+    try:
+        start_time = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+        end_time = datetime.now(timezone.utc).isoformat()
+
+        response = requests.get(
+            f"{self.base_url}/history/period/{start_time}",
+            headers=self.headers,
+            params={
+                "filter_entity_id": entity_id,
+                "end_time": end_time,
+                "minimal_response": "true",
+                "no_attributes": "true"
+            },
+            timeout=30
+        )
+
+        print(f"[ha_client] get_history status for {entity_id}: {response.status_code}")
+        print(f"[ha_client] get_history url: {response.url}")
+        print(f"[ha_client] get_history body preview: {response.text[:500]}")
+
+        if response.status_code == 200:
+            data = response.json()
+            print(f"[ha_client] get_history raw type: {type(data)}")
+            print(f"[ha_client] get_history raw preview: {str(data)[:500]}")
+            return data
+        else:
+            print(f"[ha_client] get_history failed: {response.status_code}")
             return []
+
+    except Exception as e:
+        print(f"[ha_client] get_history error: {e}")
+        return []
     # return only the devices we care about for pattern learning
     def get_target_entities(self):
        
