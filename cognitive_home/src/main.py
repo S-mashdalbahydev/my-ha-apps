@@ -154,9 +154,8 @@ def setup_schedule():
     Sets up all scheduled tasks.
     schedule library runs tasks at the specified intervals.
     """
-    # Learn patterns every hour
-    schedule.every(1).hours.do(learn_patterns)
-
+    # Learn patterns every min for testing
+    schedule.every(1).minutes.do(learn_patterns)
     # Check and suggest every X minutes (from HA config)
     schedule.every(CHECK_INTERVAL).minutes.do(check_and_suggest)
 
@@ -164,7 +163,7 @@ def setup_schedule():
     schedule.every().day.at("00:00").do(reset_daily_tracker)
 
     print(f"[main] Schedule set up:")
-    print(f"[main]   Learning    → every 1 hour")
+    print(f"[main]   Learning    → every 1 min")
     print(f"[main]   Suggesting  → every {CHECK_INTERVAL} minutes")
     print(f"[main]   Daily reset → midnight")
 
