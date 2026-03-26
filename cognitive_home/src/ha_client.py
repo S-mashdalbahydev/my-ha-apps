@@ -1,6 +1,7 @@
 import os
 import requests
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+
 
 class HAClient:
     def __init__(self):
@@ -11,9 +12,7 @@ class HAClient:
             "Content-Type": "application/json"
         }
 
-    # return all devices/entities currently in HA
     def get_all_entities(self):
-      
         try:
             response = requests.get(
                 f"{self.base_url}/states",
@@ -23,50 +22,47 @@ class HAClient:
                 return response.json()
             else:
                 print(f"[ha_client] get_all_entities failed: {response.status_code}")
+                print(f"[ha_client] get_all_entities body: {response.text[:500]}")
                 return []
         except Exception as e:
             print(f"[ha_client] get_all_entities error: {e}")
             return []
-        
-#  show the history of a specific device for the last n days(return raw data)
-def get_history(self, entity_id: str, days: int = 14):
-    try:
-        start_time = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
-        end_time = datetime.now(timezone.utc).isoformat()
 
-        response = requests.get(
-            f"{self.base_url}/history/period/{start_time}",
-            headers=self.headers,
-            params={
-                "filter_entity_id": entity_id,
-                "end_time": end_time,
-                "minimal_response": "true",
-                "no_attributes": "true"
-            },
-            timeout=30
-        )
+    def get_history(self, entity_id: str, days: int = 14):
+        try:
+            start_time = (datetime.now() - timedelta(days=days)).isoformat()
+            response = requests.get(
+                f"{self.base_url}/history/period/{start_time}",
+                headers=self.headers,
+                params={"filter_entity_id": entity_id}
+            )
 
-        print(f"[ha_client] get_history status for {entity_id}: {response.status_code}")
-        print(f"[ha_client] get_history url: {response.url}")
-        print(f"[ha_client] get_history body preview: {response.text[:500]}")
+            print(f"[ha_client] get_history status for {entity_id}: {response.status_code}")
+            print(f"[ha_client] get_history url: {response.url}")
+            print(f"[ha_client] get_history body preview: {response.text[:500]}")
 
-        if response.status_code == 200:
-            data = response.json()
-            print(f"[ha_client] get_history raw type: {type(data)}")
-            print(f"[ha_client] get_history raw preview: {str(data)[:500]}")
-            return data
-        else:
-            print(f"[ha_client] get_history failed: {response.status_code}")
+            if response.status_code == 200:
+                data = response.json()
+                print(f"[ha_client] get_history raw type: {type(data)}")
+                print(f"[ha_client] get_history raw preview: {str(data)[:500]}")
+                return data
+            else:
+                print(f"[ha_client] get_history failed: {response.status_code}")
+                return []
+
+        except Exception as e:
+            print(f"[ha_client] get_history error: {e}")
             return []
 
-    except Exception as e:
-        print(f"[ha_client] get_history error: {e}")
-        return []
-    # return only the devices we care about for pattern learning
     def get_target_entities(self):
-       
         all_entities = self.get_all_entities()
-        target_prefixes = ("climate.", "light.", "switch.", "media_player.","input_boolean.")
+        target_prefixes = (
+            "climate.",
+            "light.",
+            "switch.",
+            "media_player.",
+            "input_boolean.",
+        )
 
         targets = [
             entity["entity_id"]
@@ -76,9 +72,8 @@ def get_history(self, entity_id: str, days: int = 14):
 
         print(f"[ha_client] Found {len(targets)} target entities")
         return targets
-    #  Sends a notification to the HA dashboard
+
     def send_notification(self, title: str, message: str, notification_id: str):
-      
         try:
             response = requests.post(
                 f"{self.base_url}/services/persistent_notification/create",
@@ -93,5 +88,6 @@ def get_history(self, entity_id: str, days: int = 14):
                 print(f"[ha_client] Notification sent: {title}")
             else:
                 print(f"[ha_client] Notification failed: {response.status_code}")
+                print(f"[ha_client] Notification body: {response.text[:500]}")
         except Exception as e:
             print(f"[ha_client] send_notification error: {e}")
