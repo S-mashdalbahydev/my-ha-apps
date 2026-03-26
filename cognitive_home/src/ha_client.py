@@ -1,6 +1,6 @@
 import os
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta,timezone
 
 
 class HAClient:
@@ -28,14 +28,22 @@ class HAClient:
             print(f"[ha_client] get_all_entities error: {e}")
             return []
 
-    def get_history(self, entity_id: str, days: int = 14):
+    def get_history(self, entity_id: str, days: int = 1):
         try:
-            start_time = (datetime.now() - timedelta(days=days)).isoformat()
+            start_time = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+            end_time = datetime.now(timezone.utc).isoformat()
+
             response = requests.get(
-                f"{self.base_url}/history/period/{start_time}",
-                headers=self.headers,
-                params={"filter_entity_id": entity_id}
-            )
+            f"{self.base_url}/history/period/{start_time}",
+            headers=self.headers,
+            params={
+                "filter_entity_id": entity_id,
+                "end_time": end_time,
+                "minimal_response": "true",
+                "no_attributes": "true",
+            },
+            timeout=30,
+        )
 
             print(f"[ha_client] get_history status for {entity_id}: {response.status_code}")
             print(f"[ha_client] get_history url: {response.url}")
