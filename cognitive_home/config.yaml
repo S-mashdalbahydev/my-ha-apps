@@ -13,8 +13,8 @@ hassio_role: default
 options:
   ollama_url: "http://ollama:11434/api/chat"
   ollama_model: "SmolLM2:360M"
-  check_interval_minutes: 15
-  min_occurrences: 3
+  check_interval_minutes: 1
+  min_occurrences: 1
 schema:
   ollama_url: str
   ollama_model: str

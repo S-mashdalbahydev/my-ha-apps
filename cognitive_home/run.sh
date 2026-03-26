@@ -11,7 +11,7 @@ bashio::log.info "Cognitive Home starting..."
 bashio::log.info "OLLAMA_URL=${OLLAMA_URL}"
 bashio::log.info "OLLAMA_MODEL=${OLLAMA_MODEL}"
 
-exec python3 /app/src/main.py
+exec python3 -u /app/src/main.py
 ```
 
 ### `requirements.txt`

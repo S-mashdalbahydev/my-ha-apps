@@ -50,7 +50,7 @@ class HAClient:
     def get_target_entities(self):
        
         all_entities = self.get_all_entities()
-        target_prefixes = ("climate.", "light.", "switch.", "media_player.")
+        target_prefixes = ("climate.", "light.", "switch.", "media_player.","input_boolean.")
 
         targets = [
             entity["entity_id"]
