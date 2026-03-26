@@ -44,17 +44,20 @@ def learn_patterns():
     for entity_id in target_entities:
         print(f"[main] Analyzing: {entity_id}")
 
-        # Fetch last 14 days of history for this device
-        history = ha.get_history(entity_id, days=14)
+        try:
+            history = ha.get_history(entity_id, days=1)
 
-        if not history:
-            print(f"[main] No history for {entity_id}, skipping")
+            if not history:
+                print(f"[main] No history for {entity_id}, skipping")
+                continue
+
+            analyzer.analyze(history, entity_id, MIN_OCCURRENCES)
+
+        except Exception as e:
+            print(f"[main] Error analyzing {entity_id}: {e}")
+            import traceback
+            traceback.print_exc()
             continue
-
-        # Run Bayesian + Sequence analysis
-        analyzer.analyze(history, entity_id, MIN_OCCURRENCES)
-
-    print("[main] Pattern learning complete")
 
 
 # ─────────────────────────────────────────
