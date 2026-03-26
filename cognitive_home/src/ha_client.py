@@ -39,7 +39,7 @@ class HAClient:
             params={
                 "filter_entity_id": entity_id,
                 "end_time": end_time,
-                "minimal_response": "true",
+                
                 "no_attributes": "true",
             },
             timeout=30,
