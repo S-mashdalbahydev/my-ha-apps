@@ -1,26 +1,24 @@
 #!/usr/bin/with-contenv bashio
-set -ex
+set -e
 
-export OLLAMA_URL="$(bashio::config 'ollama_url')"
-export OLLAMA_MODEL="$(bashio::config 'ollama_model')"
-export CHECK_INTERVAL="$(bashio::config 'check_interval_minutes')"
-export MIN_OCCURRENCES="$(bashio::config 'min_occurrences')"
+bashio::log.info "RUN.SH STEP 1"
+bashio::log.info "RUN.SH STEP 2"
 
-bashio::log.info "Cognitive Home starting..."
-bashio::log.info "OLLAMA_URL=${OLLAMA_URL}"
-bashio::log.info "OLLAMA_MODEL=${OLLAMA_MODEL}"
-
-bashio::log.info "Checking filesystem..."
-ls -la /app
+ls -la /app || true
 ls -la /app/src || true
 
-bashio::log.info "Checking Python..."
-which python3 || true
+bashio::log.info "RUN.SH STEP 3"
+
 python3 --version || true
 
-bashio::log.info "Checking main.py..."
-python3 -c "import os; print('/app/src/main.py exists =', os.path.exists('/app/src/main.py'))"
-python3 -c "print(open('/app/src/main.py', 'r', encoding='utf-8').read()[:300])" || true
+bashio::log.info "RUN.SH STEP 4"
 
-bashio::log.info "Launching app..."
-exec python3 -u /app/src/main.py
+if [ -f /app/src/main.py ]; then
+    bashio::log.info "main.py exists"
+else
+    bashio::log.info "main.py missing"
+fi
+
+bashio::log.info "RUN.SH STEP 5"
+
+python3 -u /app/src/main.py
