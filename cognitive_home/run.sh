@@ -1,7 +1,6 @@
 #!/usr/bin/with-contenv bashio
-set -e
+set -ex
 
-# Read config exactly like pie-assistant does
 export OLLAMA_URL="$(bashio::config 'ollama_url')"
 export OLLAMA_MODEL="$(bashio::config 'ollama_model')"
 export CHECK_INTERVAL="$(bashio::config 'check_interval_minutes')"
@@ -11,11 +10,17 @@ bashio::log.info "Cognitive Home starting..."
 bashio::log.info "OLLAMA_URL=${OLLAMA_URL}"
 bashio::log.info "OLLAMA_MODEL=${OLLAMA_MODEL}"
 
-exec python3 -u /app/src/main.py
-```
+bashio::log.info "Checking filesystem..."
+ls -la /app
+ls -la /app/src || true
 
-### `requirements.txt`
-```
-requests
-schedule
-websocket-client
+bashio::log.info "Checking Python..."
+which python3 || true
+python3 --version || true
+
+bashio::log.info "Checking main.py..."
+python3 -c "import os; print('/app/src/main.py exists =', os.path.exists('/app/src/main.py'))"
+python3 -c "print(open('/app/src/main.py', 'r', encoding='utf-8').read()[:300])" || true
+
+bashio::log.info "Launching app..."
+exec python3 -u /app/src/main.py
