@@ -39,9 +39,13 @@ class HAClient:
                 params={"filter_entity_id": entity_id}
             )
             if response.status_code == 200:
-                return response.json()
+                data = response.json()
+                print(f"[ha_client] get_history raw type: {type(data)}")
+                print(f"[ha_client] get_history raw preview: {str(data)[:500]}")
+                return data
             else:
                 print(f"[ha_client] get_history failed: {response.status_code}")
+                print(f"[ha_client] get_history body: {response.text[:500]}")
                 return []
         except Exception as e:
             print(f"[ha_client] get_history error: {e}")
