@@ -1,0 +1,24 @@
+name: "Cognitive Home"
+description: "Learns your routine and suggests smart automations"
+version: "1.0.0"
+slug: "cognitive_home"
+init: false
+arch:
+  - aarch64
+  - amd64
+startup: services
+homeassistant_api: true
+hassio_api: true
+hassio_role: default
+options:
+  ollama_url: "http://ollama:11434/api/chat"
+  ollama_model: "SmolLM2:360M"
+  check_interval_minutes: 15
+  min_occurrences: 3
+schema:
+  ollama_url: str
+  ollama_model: str
+  check_interval_minutes: int
+  min_occurrences: int
+map:
+  - data:rw
