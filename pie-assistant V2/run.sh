@@ -13,6 +13,7 @@ export CHUNK_SIZE="$(bashio::config 'chunk_size')"
 export CHUNK_OVERLAP="$(bashio::config 'chunk_overlap')"
 export TOP_K_CHUNKS="$(bashio::config 'top_k_chunks')"
 
+export NUM_PREDICT="$(bashio::config 'num_predict')"
 export TEMPERATURE="$(bashio::config 'temperature')"
 export NUM_CTX="$(bashio::config 'num_ctx')"
 export REQUEST_TIMEOUT="$(bashio::config 'request_timeout')"

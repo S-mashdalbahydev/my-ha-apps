@@ -29,6 +29,7 @@ EMBED_TIMEOUT   = int(os.getenv("EMBED_TIMEOUT",   "60"))
 CHAT_TIMEOUT    = int(os.getenv("CHAT_TIMEOUT",    "120"))
 TEMPERATURE     = float(os.getenv("TEMPERATURE",   "0.2"))
 NUM_CTX         = int(os.getenv("NUM_CTX",         "8192"))
+NUM_PREDICT     = int(os.getenv("NUM_PREDICT",     "80"))
 
 # Derived
 TOTAL_RESULTS = SCRAPE_PAGES + SNIPPET_PAGES
@@ -272,7 +273,7 @@ def generate_answer(question: str, chunks: list[dict]) -> tuple[str, float]:
             ],
             "stream": False,
             "think":  False,
-            "options": {"temperature": TEMPERATURE, "num_ctx": NUM_CTX},
+            "options": {"temperature": TEMPERATURE, "num_ctx": NUM_CTX, "num_predict": NUM_PREDICT},
         },
         timeout=CHAT_TIMEOUT,
     )

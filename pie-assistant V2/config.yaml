@@ -1,5 +1,5 @@
-name: "pie assistantv2"
-slug: "pie_assistantv2"
+name: "pie assistant"
+slug: "pie_assistant"
 description: "HTTP agent that answers questions using SearXNG + page scraping + FAISS retrieval + Ollama."
 version: "0.2.0"
 init: false
@@ -26,6 +26,7 @@ options:
   chunk_overlap: 40
   top_k_chunks: 2
   temperature: 0.2
+  num_predict: 80
   num_ctx: 8192
   request_timeout: 10
   embed_timeout: 60
@@ -43,6 +44,7 @@ schema:
   chunk_overlap: int
   top_k_chunks: int
   temperature: float
+  num_predict: int
   num_ctx: int
   request_timeout: int
   embed_timeout: int
