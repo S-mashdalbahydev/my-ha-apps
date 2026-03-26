@@ -1,7 +1,7 @@
-name: "pie assistant"
-slug: "pie_assistant"
+name: "pie assistantv2"
+slug: "pie_assistantv2"
 description: "HTTP agent that answers questions using SearXNG + page scraping + FAISS retrieval + Ollama."
-version: "0.2.0"
+version: "0.2.1"
 init: false
 
 arch:
