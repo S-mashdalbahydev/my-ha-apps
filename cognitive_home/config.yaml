@@ -19,6 +19,7 @@ options:
   lookahead_minutes: 60
   force_suggestion_mode: true
   disable_weekday_check: true
+  reset_on_startup: false
 schema:
   ollama_url: str
   ollama_model: str
@@ -28,6 +29,7 @@ schema:
   lookahead_minutes: int
   force_suggestion_mode: bool
   disable_weekday_check: bool
+  reset_on_startup: bool
 map:
   - data:rw
 ports:

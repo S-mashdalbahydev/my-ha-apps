@@ -1,12 +1,26 @@
 import os
 import requests
 
-
 DAYS = {
-    0: "Monday",   1: "Tuesday", 2: "Wednesday",
-    3: "Thursday", 4: "Friday",  5: "Saturday",
+    0: "Monday",   1: "Tuesday",  2: "Wednesday",
+    3: "Thursday", 4: "Friday",   5: "Saturday",
     6: "Sunday"
 }
+
+
+def format_time(hour: int) -> str:
+    if hour == 0:
+        return "12:00 AM"
+    elif hour < 12:
+        return f"{hour}:00 AM"
+    elif hour == 12:
+        return "12:00 PM"
+    else:
+        return f"{hour - 12}:00 PM"
+
+
+def friendly_name(entity_id: str) -> str:
+    return entity_id.split(".")[-1].replace("_", " ").title()
 
 
 class SuggestionEngine:
@@ -15,51 +29,12 @@ class SuggestionEngine:
             "OLLAMA_URL", "http://ollama:11434/api/chat"
         )
         self.model = os.environ.get("OLLAMA_MODEL", "SmolLM2:360M")
-
         self.system_prompt = """
 You are a smart home assistant that helps users automate their home routines.
-Your job is to suggest automations based on patterns you have noticed.
+Suggest automations based on detected patterns.
 Keep suggestions short, friendly, and clear — one or two sentences maximum.
 Always end with a question asking if the user wants to automate it.
 """
-
-    def _build_prompt(self, pattern: dict) -> str:
-        day_name    = DAYS.get(pattern["weekday"], "unknown day")
-        entity      = pattern["entity_id"]
-        hour        = pattern["hour"]
-        occurrences = pattern["occurrences"]
-        confidence  = int(pattern["confidence"] * 100)
-
-        prompt = (
-            f"I noticed the following pattern in the home:\n"
-            f"- Device: {entity}\n"
-            f"- Usually activated at: {hour:02d}:00\n"
-            f"- Day: {day_name}\n"
-            f"- Occurred: {occurrences} times\n"
-            f"- Confidence: {confidence}%\n\n"
-            f"Write a short friendly suggestion to the user "
-            f"asking if they want to automate this."
-        )
-        return prompt
-
-    def _build_sequence_prompt(self, sequence: dict) -> str:
-        trigger_parts  = sequence["trigger"].split("|")
-        action_parts   = sequence["action"].split("|")
-        trigger_entity = trigger_parts[0]
-        trigger_state  = trigger_parts[1] if len(trigger_parts) > 1 else "activated"
-        action_entity  = action_parts[0]
-        action_state   = action_parts[1] if len(action_parts) > 1 else "activated"
-        count          = sequence["count"]
-
-        prompt = (
-            f"I noticed the following sequence in the home:\n"
-            f"- When: {trigger_entity} changes to '{trigger_state}'\n"
-            f"- Then: {action_entity} is set to '{action_state}'\n"
-            f"- This happened: {count} times\n\n"
-            f"Write a short friendly suggestion to the user "
-            f"asking if they want to automate this sequence."
-        )
-        return prompt
 
     def _call_ollama(self, prompt: str) -> str:
         try:
@@ -75,81 +50,65 @@ Always end with a question asking if the user wants to automate it.
                 },
                 timeout=30
             )
-
             if response.status_code == 200:
-                data = response.json()
-                return data["message"]["content"].strip()
-            else:
-                print(f"[suggestion_engine] Ollama error: {response.status_code}")
-                return None
-
-        except requests.exceptions.Timeout:
-            print("[suggestion_engine] Ollama timed out")
+                return response.json()["message"]["content"].strip()
             return None
         except Exception as e:
             print(f"[suggestion_engine] Ollama call failed: {e}")
             return None
 
-    def _fallback_message(self, pattern: dict) -> str:
-        # ── FIX: use correct day and friendly wording ──
+    def generate_suggestion(self, pattern: dict) -> str:
         day_name = DAYS.get(pattern["weekday"], "regularly")
-        entity   = pattern["entity_id"].split(".")[-1].replace("_", " ").title()
-        hour     = pattern["hour"]
+        entity   = friendly_name(pattern["entity_id"])
+        time_str = format_time(pattern["hour"])
         occ      = pattern["occurrences"]
 
-        # Format time nicely: 18 → "6:00 PM", 9 → "9:00 AM"
-        if hour == 0:
-            time_str = "12:00 AM"
-        elif hour < 12:
-            time_str = f"{hour}:00 AM"
-        elif hour == 12:
-            time_str = "12:00 PM"
-        else:
-            time_str = f"{hour - 12}:00 PM"
-
-        return (
-            f"I noticed you usually turn on {entity} "
-            f"around {time_str} on {day_name} "
-            f"({occ} times recorded). "
-            f"Would you like me to automate this for you?"
+        prompt = (
+            f"Device: {entity}\n"
+            f"Usually activated at: {time_str} on {day_name}\n"
+            f"Occurred: {occ} times\n"
+            f"Write a short friendly suggestion asking if the user "
+            f"wants to automate this."
         )
 
-    def _fallback_sequence_message(self, sequence: dict) -> str:
-        # ── FIX: better sequence fallback ──
-        trigger_parts  = sequence["trigger"].split("|")
-        action_parts   = sequence["action"].split("|")
-
-        trigger_entity = trigger_parts[0].split(".")[-1].replace("_", " ").title()
-        trigger_state  = trigger_parts[1] if len(trigger_parts) > 1 else "activated"
-        action_entity  = action_parts[0].split(".")[-1].replace("_", " ").title()
-        count          = sequence["count"]
-
-        return (
-            f"I noticed that whenever {trigger_entity} turns {trigger_state}, "
-            f"you usually also activate {action_entity} "
-            f"({count} times). "
-            f"Would you like me to automate this?"
-        )
-
-    def generate_suggestion(self, pattern: dict) -> str:
-        print(f"[suggestion_engine] Generating for: {pattern['entity_id']}")
-
-        suggestion = self._call_ollama(self._build_prompt(pattern))
+        suggestion = self._call_ollama(prompt)
 
         if not suggestion:
-            print("[suggestion_engine] Using fallback message")
-            suggestion = self._fallback_message(pattern)
+            suggestion = (
+                f"I noticed you usually turn on {entity} "
+                f"at {time_str} on {day_name} "
+                f"({occ} times recorded). "
+                f"Would you like me to automate this for you?"
+            )
 
-        print(f"[suggestion_engine] Result: {suggestion}")
+        print(f"[suggestion_engine] {suggestion}")
         return suggestion
 
     def generate_sequence_suggestion(self, sequence: dict) -> str:
-        print(f"[suggestion_engine] Generating sequence suggestion")
+        trigger_parts  = sequence["trigger"].split("|")
+        action_parts   = sequence["action"].split("|")
+        trigger_entity = friendly_name(trigger_parts[0])
+        trigger_state  = trigger_parts[1] if len(trigger_parts) > 1 else "activated"
+        action_entity  = friendly_name(action_parts[0])
+        count          = sequence["count"]
 
-        suggestion = self._call_ollama(self._build_sequence_prompt(sequence))
+        prompt = (
+            f"When {trigger_entity} turns {trigger_state}, "
+            f"the user usually activates {action_entity}. "
+            f"This happened {count} times. "
+            f"Write a short friendly suggestion asking if they want "
+            f"to automate this sequence."
+        )
+
+        suggestion = self._call_ollama(prompt)
 
         if not suggestion:
-            suggestion = self._fallback_sequence_message(sequence)
+            suggestion = (
+                f"I noticed that whenever {trigger_entity} turns {trigger_state}, "
+                f"you usually also activate {action_entity} "
+                f"({count} times recorded). "
+                f"Would you like me to automate this?"
+            )
 
-        print(f"[suggestion_engine] Sequence result: {suggestion}")
+        print(f"[suggestion_engine] {suggestion}")
         return suggestion

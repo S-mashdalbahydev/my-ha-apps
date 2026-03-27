@@ -3,9 +3,7 @@ import os
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 
-# ── FIX: define local timezone offset ──
-# Change this to match your timezone
-# Riyadh = UTC+3
+# Riyadh = UTC+3 — change if needed
 LOCAL_TZ = timezone(timedelta(hours=3))
 
 
@@ -25,11 +23,20 @@ class PatternAnalyzer:
         with open(self.data_path, "w") as f:
             json.dump(self.patterns, f, indent=2)
 
+    def reset(self):
+        """Wipes all learned patterns from memory and disk."""
+        self.patterns = {}
+        self.sequence_counts.clear()
+        if os.path.exists(self.data_path):
+            os.remove(self.data_path)
+            print("[pattern_analyzer] patterns.json deleted")
+        print("[pattern_analyzer] Reset complete")
+
     def _build_key(self, entity_id: str, hour: int, weekday: int) -> str:
         return f"{entity_id}|{hour}|{weekday}"
 
     def _update_bayesian_confidence(self, key: str, entity_id: str,
-                                     hour: int, weekday: int):
+                                    hour: int, weekday: int):
         if key not in self.patterns:
             self.patterns[key] = {
                 "entity_id": entity_id,
@@ -40,7 +47,6 @@ class PatternAnalyzer:
                 "confidence": 0.0,
                 "confirmed": False
             }
-
         self.patterns[key]["occurrences"] += 1
         occ    = self.patterns[key]["occurrences"]
         missed = self.patterns[key]["missed"]
@@ -49,11 +55,8 @@ class PatternAnalyzer:
     def _update_sequence(self, prev_event: dict, curr_event: dict):
         if prev_event is None:
             return
-
-        # ── FIX: skip empty states ──
         if not prev_event.get("state") or not curr_event.get("state"):
             return
-
         prev_key = f"{prev_event['entity_id']}|{prev_event['state']}"
         curr_key = f"{curr_event['entity_id']}|{curr_event['state']}"
         self.sequence_counts[prev_key][curr_key] += 1
@@ -75,15 +78,12 @@ class PatternAnalyzer:
                 continue
 
             try:
-                # ── FIX: convert UTC → local time ──
-                dt_utc = datetime.fromisoformat(
-                    state_change["last_changed"]
-                )
+                # Convert UTC timestamp to local time
+                dt_utc   = datetime.fromisoformat(state_change["last_changed"])
                 dt_local = dt_utc.astimezone(LOCAL_TZ)
             except Exception:
                 continue
 
-            # ── FIX: use local hour and weekday ──
             key = self._build_key(entity_id, dt_local.hour, dt_local.weekday())
             self._update_bayesian_confidence(
                 key, entity_id, dt_local.hour, dt_local.weekday()
@@ -100,7 +100,7 @@ class PatternAnalyzer:
 
         print(f"[pattern_analyzer] Total patterns: {len(self.patterns)}")
         for k, v in self.patterns.items():
-            print(f"[pattern_analyzer] Pattern: {k} | "
+            print(f"[pattern_analyzer] {k} | "
                   f"occurrences={v['occurrences']} | "
                   f"confidence={v['confidence']:.2f} | "
                   f"confirmed={v['confirmed']}")
@@ -114,13 +114,11 @@ class PatternAnalyzer:
         force_suggestion: bool = True,
         disable_weekday_check: bool = True
     ):
-        # ── FIX: use local time ──
-        now = datetime.now(LOCAL_TZ)
+        now          = datetime.now(LOCAL_TZ)
         current_hour = now.hour
         next_hour    = (now.hour + 1) % 24
 
-        print(f"[pattern_analyzer] Local time: {now.strftime('%H:%M %A')} | "
-              f"current_hour={current_hour} | next_hour={next_hour}")
+        print(f"[pattern_analyzer] Local time: {now.strftime('%H:%M %A')}")
         print(f"[pattern_analyzer] Total patterns: {len(self.patterns)}")
 
         for k, v in self.patterns.items():
@@ -133,8 +131,8 @@ class PatternAnalyzer:
 
         for key, pattern in self.patterns.items():
             is_right_hour = pattern["hour"] in [current_hour, next_hour]
-            is_right_day  = True if disable_weekday_check else \
-                            pattern["weekday"] == now.weekday()
+            is_right_day  = (True if disable_weekday_check
+                             else pattern["weekday"] == now.weekday())
             is_confident  = pattern["confidence"] >= confidence_threshold
             not_confirmed = not pattern["confirmed"]
 
@@ -143,35 +141,29 @@ class PatternAnalyzer:
                 print(f"[pattern_analyzer] ✅ Match: {key}")
 
         if not upcoming and force_suggestion and self.patterns:
-            print("[pattern_analyzer] ⚠️ No match — forced suggestion mode")
-
-            # ── FIX: only force unconfirmed patterns ──
+            print("[pattern_analyzer] ⚠️ Forced suggestion mode")
             unconfirmed = {
                 k: v for k, v in self.patterns.items()
                 if not v["confirmed"] and v["confidence"] >= confidence_threshold
             }
-
             if unconfirmed:
                 strongest = max(
                     unconfirmed.values(),
                     key=lambda p: p["occurrences"]
                 )
                 upcoming.append(strongest)
-                print(f"[pattern_analyzer] 🔁 Forced: "
-                      f"{strongest['entity_id']} | "
-                      f"occurrences={strongest['occurrences']}")
+                print(f"[pattern_analyzer] 🔁 Forced: {strongest['entity_id']}")
             else:
-                print("[pattern_analyzer] All patterns confirmed, nothing to suggest")
+                print("[pattern_analyzer] All patterns confirmed")
 
         return upcoming
 
     def get_top_sequences(self, min_count: int = 3):
         sequences = []
         for trigger, actions in self.sequence_counts.items():
+            if "|" not in trigger or trigger.endswith("|"):
+                continue
             for action, count in actions.items():
-                # ── FIX: skip empty state sequences ──
-                if "|" not in trigger or trigger.endswith("|"):
-                    continue
                 if count >= min_count:
                     sequences.append({
                         "trigger": trigger,
@@ -179,16 +171,10 @@ class PatternAnalyzer:
                         "count": count
                     })
         sequences.sort(key=lambda x: x["count"], reverse=True)
-
-        print(f"[pattern_analyzer] Top sequences: {len(sequences)}")
-        for s in sequences[:3]:
-            print(f"[pattern_analyzer] Sequence: {s['trigger']} → "
-                  f"{s['action']} | count={s['count']}")
-
         return sequences
 
     def confirm_pattern(self, key: str):
         if key in self.patterns:
             self.patterns[key]["confirmed"] = True
             self._save_patterns()
-            print(f"[pattern_analyzer] Pattern confirmed: {key}")
+            print(f"[pattern_analyzer] Confirmed: {key}")

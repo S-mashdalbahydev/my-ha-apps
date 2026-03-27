@@ -9,14 +9,13 @@ analyzer = None
 pending_suggestions = {}
 
 DAYS = {
-    0: "Monday",   1: "Tuesday", 2: "Wednesday",
-    3: "Thursday", 4: "Friday",  5: "Saturday",
+    0: "Monday",   1: "Tuesday",  2: "Wednesday",
+    3: "Thursday", 4: "Friday",   5: "Saturday",
     6: "Sunday"
 }
 
 
-def _format_time(hour: int) -> str:
-    """Converts 24h hour to friendly 12h format."""
+def format_time(hour: int) -> str:
     if hour == 0:
         return "12:00 AM"
     elif hour < 12:
@@ -27,189 +26,310 @@ def _format_time(hour: int) -> str:
         return f"{hour - 12}:00 PM"
 
 
+def friendly_name(entity_id: str) -> str:
+    return entity_id.split(".")[-1].replace("_", " ").title()
+
+
 def register_pending(suggestion_id: str, pattern: dict):
     pending_suggestions[suggestion_id] = pattern
-    print(f"[cognitive_web] Registered pending: {suggestion_id}")
+    print(f"[cognitive_web] Registered: {suggestion_id}")
+
+
+def _page(content: str, title: str = "Cognitive Home") -> str:
+    """Base HTML wrapper with consistent styling."""
+    return f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>{title}</title>
+        <style>
+            * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont,
+                             'Segoe UI', Roboto, Arial, sans-serif;
+                background: #0b0b14;
+                color: #e0e0e0;
+                min-height: 100vh;
+            }}
+
+            header {{
+                background: linear-gradient(135deg, #0f0f1a, #16213e);
+                border-bottom: 1px solid #1e2d4a;
+                padding: 20px 24px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }}
+
+            header .logo {{ font-size: 28px; }}
+
+            header h1 {{
+                font-size: 20px;
+                color: #ffffff;
+                font-weight: 600;
+            }}
+
+            header p {{
+                font-size: 13px;
+                color: #5a7a9a;
+                margin-top: 2px;
+            }}
+
+            main {{
+                max-width: 560px;
+                margin: 0 auto;
+                padding: 24px 16px;
+            }}
+
+            /* ── Empty state ── */
+            .empty {{
+                text-align: center;
+                padding: 60px 20px;
+            }}
+            .empty .icon {{ font-size: 56px; margin-bottom: 16px; }}
+            .empty h2 {{
+                font-size: 20px;
+                color: #ffffff;
+                margin-bottom: 8px;
+            }}
+            .empty p {{ color: #5a7a9a; font-size: 14px; line-height: 1.6; }}
+
+            /* ── Suggestion card ── */
+            .card {{
+                background: #13192b;
+                border: 1px solid #1e2d4a;
+                border-radius: 16px;
+                padding: 22px;
+                margin-bottom: 16px;
+                box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+            }}
+
+            .card-header {{
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 18px;
+            }}
+
+            .card-header .badge {{
+                font-size: 22px;
+            }}
+
+            .card-header h2 {{
+                font-size: 17px;
+                font-weight: 600;
+                color: #ffffff;
+            }}
+
+            .card-header .tag {{
+                margin-left: auto;
+                background: #1e3a5f;
+                color: #5b9bd5;
+                font-size: 11px;
+                padding: 3px 8px;
+                border-radius: 20px;
+                font-weight: 500;
+            }}
+
+            /* ── Info rows ── */
+            .info-grid {{
+                background: #0d1220;
+                border-radius: 10px;
+                overflow: hidden;
+                margin-bottom: 16px;
+            }}
+
+            .info-row {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 11px 14px;
+                border-bottom: 1px solid #1a2535;
+                font-size: 14px;
+            }}
+
+            .info-row:last-child {{ border-bottom: none; }}
+            .info-label {{ color: #5a7a9a; }}
+            .info-value {{ color: #e0e0e0; font-weight: 500; }}
+
+            /* ── Confidence bar ── */
+            .conf-bar {{
+                height: 4px;
+                background: #1a2535;
+                border-radius: 2px;
+                margin-top: 4px;
+                overflow: hidden;
+            }}
+            .conf-fill {{
+                height: 100%;
+                background: linear-gradient(90deg, #1e6ef5, #00e676);
+                border-radius: 2px;
+            }}
+
+            /* ── Question ── */
+            .question {{
+                font-size: 14px;
+                color: #8a9ab5;
+                text-align: center;
+                margin-bottom: 16px;
+                line-height: 1.5;
+            }}
+
+            /* ── Buttons ── */
+            .buttons {{
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }}
+
+            .btn {{
+                padding: 13px 16px;
+                border-radius: 10px;
+                text-align: center;
+                text-decoration: none;
+                font-weight: 600;
+                font-size: 14px;
+                letter-spacing: 0.3px;
+                transition: transform 0.1s, opacity 0.2s;
+                display: block;
+            }}
+
+            .btn:hover {{
+                transform: translateY(-1px);
+                opacity: 0.9;
+            }}
+
+            .btn-yes {{
+                background: #0a3d24;
+                color: #00e676;
+                border: 1px solid #0d5c34;
+            }}
+
+            .btn-no {{
+                background: #3d0a0a;
+                color: #ff5252;
+                border: 1px solid #5c0d0d;
+            }}
+
+            /* ── Result pages ── */
+            .result {{
+                text-align: center;
+                padding: 50px 20px;
+            }}
+            .result .icon {{ font-size: 64px; margin-bottom: 20px; }}
+            .result h2 {{ font-size: 24px; margin-bottom: 10px; }}
+            .result p  {{
+                color: #5a7a9a;
+                font-size: 14px;
+                line-height: 1.7;
+                margin-bottom: 6px;
+            }}
+            .result strong {{ color: #e0e0e0; }}
+            .result .back {{
+                display: inline-block;
+                margin-top: 28px;
+                color: #1e6ef5;
+                text-decoration: none;
+                font-size: 14px;
+            }}
+        </style>
+    </head>
+    <body>
+        <header>
+            <div class="logo">🏠</div>
+            <div>
+                <h1>Cognitive Home</h1>
+                <p>Smart automation suggestions</p>
+            </div>
+        </header>
+        <main>
+            {content}
+        </main>
+    </body>
+    </html>
+    """
 
 
 @app.route("/")
 def index():
-    if not pending_suggestions:
-        return """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta name='viewport' content='width=device-width, initial-scale=1'>
-            <title>Cognitive Home</title>
-            <style>
-                * { box-sizing: border-box; margin: 0; padding: 0; }
-                body {
-                    font-family: -apple-system, BlinkMacSystemFont,
-                                 'Segoe UI', Arial, sans-serif;
-                    background: #0f0f1a;
-                    color: #e0e0e0;
-                    min-height: 100vh;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    flex-direction: column;
-                    padding: 20px;
-                    text-align: center;
-                }
-                .icon { font-size: 64px; margin-bottom: 20px; }
-                h1 { color: #e94560; font-size: 28px; margin-bottom: 10px; }
-                p  { color: #888; font-size: 16px; line-height: 1.6; }
-            </style>
-        </head>
-        <body>
-            <div class='icon'>🏠</div>
-            <h1>Cognitive Home</h1>
-            <p>No pending suggestions right now.</p>
-            <p>I'm still learning your routines.<br>
-               Check back soon!</p>
-        </body>
-        </html>
+    # Filter only unconfirmed suggestions
+    active = {
+        sid: p for sid, p in pending_suggestions.items()
+        if not p.get("confirmed", False)
+    }
+
+    if not active:
+        content = """
+        <div class="empty">
+            <div class="icon">🔍</div>
+            <h2>Learning your routines...</h2>
+            <p>No suggestions yet. Toggle your devices a few times<br>
+               and I'll start recognizing patterns.</p>
+        </div>
         """
+        return _page(content)
 
     cards = ""
-    for sid, pattern in pending_suggestions.items():
-        day_name  = DAYS.get(pattern["weekday"], "unknown")
-        entity    = pattern["entity_id"].split(".")[-1].replace("_", " ").title()
-        time_str  = _format_time(pattern["hour"])
-        occ       = pattern["occurrences"]
-        conf      = int(pattern["confidence"] * 100)
+    for sid, pattern in active.items():
+        day_name = DAYS.get(pattern["weekday"], "regularly")
+        entity   = friendly_name(pattern["entity_id"])
+        time_str = format_time(pattern["hour"])
+        occ      = pattern["occurrences"]
+        conf     = int(pattern["confidence"] * 100)
+        conf_pct = min(conf, 100)
 
         cards += f"""
-        <div class='card'>
-            <div class='card-icon'>💡</div>
-            <h2>Smart Suggestion</h2>
-            <div class='detail'>
-                <div class='detail-row'>
-                    <span class='label'>Device</span>
-                    <span class='value'>{entity}</span>
+        <div class="card">
+            <div class="card-header">
+                <span class="badge">💡</span>
+                <h2>Suggested Automation</h2>
+                <span class="tag">New</span>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-row">
+                    <span class="info-label">Device</span>
+                    <span class="info-value">{entity}</span>
                 </div>
-                <div class='detail-row'>
-                    <span class='label'>Usually at</span>
-                    <span class='value'>{time_str} on {day_name}</span>
+                <div class="info-row">
+                    <span class="info-label">Usually at</span>
+                    <span class="info-value">{time_str} · {day_name}</span>
                 </div>
-                <div class='detail-row'>
-                    <span class='label'>Seen</span>
-                    <span class='value'>{occ} times ({conf}% confidence)</span>
+                <div class="info-row">
+                    <span class="info-label">Times observed</span>
+                    <span class="info-value">{occ} times</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Confidence</span>
+                    <span class="info-value">
+                        {conf}%
+                        <div class="conf-bar">
+                            <div class="conf-fill"
+                                 style="width:{conf_pct}%"></div>
+                        </div>
+                    </span>
                 </div>
             </div>
-            <p class='question'>
-                Want me to automate this for you?
+
+            <p class="question">
+                Would you like me to automate this for you?
             </p>
-            <div class='buttons'>
-                <a href='/confirm/{sid}' class='btn yes'>
+
+            <div class="buttons">
+                <a href="/confirm/{sid}" class="btn btn-yes">
                     ✅ Yes, automate it
                 </a>
-                <a href='/reject/{sid}' class='btn no'>
+                <a href="/reject/{sid}" class="btn btn-no">
                     ❌ No thanks
                 </a>
             </div>
         </div>
         """
 
-    return f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta name='viewport' content='width=device-width, initial-scale=1'>
-        <title>Cognitive Home</title>
-        <style>
-            * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-            body {{
-                font-family: -apple-system, BlinkMacSystemFont,
-                             'Segoe UI', Arial, sans-serif;
-                background: #0f0f1a;
-                color: #e0e0e0;
-                min-height: 100vh;
-                padding: 20px;
-            }}
-            header {{
-                text-align: center;
-                padding: 30px 0 20px;
-            }}
-            header h1 {{
-                color: #e94560;
-                font-size: 28px;
-                margin-bottom: 6px;
-            }}
-            header p {{
-                color: #666;
-                font-size: 14px;
-            }}
-            .card {{
-                background: #16213e;
-                border-radius: 16px;
-                padding: 24px;
-                margin: 16px auto;
-                max-width: 480px;
-                border: 1px solid #1a2a4a;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            }}
-            .card-icon {{
-                font-size: 36px;
-                margin-bottom: 12px;
-                text-align: center;
-            }}
-            h2 {{
-                text-align: center;
-                font-size: 20px;
-                color: #ffffff;
-                margin-bottom: 16px;
-            }}
-            .detail {{
-                background: #0f1929;
-                border-radius: 10px;
-                padding: 14px;
-                margin-bottom: 16px;
-            }}
-            .detail-row {{
-                display: flex;
-                justify-content: space-between;
-                padding: 6px 0;
-                border-bottom: 1px solid #1a2a3a;
-                font-size: 14px;
-            }}
-            .detail-row:last-child {{ border-bottom: none; }}
-            .label {{ color: #888; }}
-            .value {{ color: #e0e0e0; font-weight: 500; }}
-            .question {{
-                text-align: center;
-                color: #aaa;
-                font-size: 15px;
-                margin-bottom: 16px;
-            }}
-            .buttons {{
-                display: flex;
-                gap: 10px;
-            }}
-            .btn {{
-                flex: 1;
-                padding: 14px;
-                border-radius: 10px;
-                text-align: center;
-                text-decoration: none;
-                font-weight: 600;
-                font-size: 15px;
-                transition: opacity 0.2s;
-            }}
-            .btn:hover {{ opacity: 0.85; }}
-            .yes {{ background: #0d4f35; color: #00e676; }}
-            .no  {{ background: #4f0d0d; color: #ff5252; }}
-        </style>
-    </head>
-    <body>
-        <header>
-            <h1>🏠 Cognitive Home</h1>
-            <p>I've noticed some patterns in your home routine</p>
-        </header>
-        {cards}
-    </body>
-    </html>
-    """
+    return _page(cards)
 
 
 @app.route("/confirm/<path:suggestion_id>")
@@ -217,17 +337,21 @@ def confirm(suggestion_id: str):
     pattern = pending_suggestions.get(suggestion_id)
 
     if not pattern:
-        return _simple_page(
-            "⚠️ Not Found",
-            "This suggestion has already been handled.",
-            "#e94560"
-        )
+        content = """
+        <div class="result">
+            <div class="icon">⚠️</div>
+            <h2 style="color:#f5a623">Already Handled</h2>
+            <p>This suggestion has already been confirmed or dismissed.</p>
+            <a href="/" class="back">← Back to suggestions</a>
+        </div>
+        """
+        return _page(content, "Already Handled")
 
     entity_id = pattern["entity_id"]
     hour      = pattern["hour"]
     weekday   = pattern["weekday"]
-    entity    = entity_id.split(".")[-1].replace("_", " ").title()
-    time_str  = _format_time(hour)
+    entity    = friendly_name(entity_id)
+    time_str  = format_time(hour)
     day_name  = DAYS.get(weekday, "daily")
 
     print(f"[cognitive_web] User confirmed: {suggestion_id}")
@@ -239,58 +363,31 @@ def confirm(suggestion_id: str):
         ha.dismiss_notification(suggestion_id)
         del pending_suggestions[suggestion_id]
 
-        return f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta name='viewport' content='width=device-width, initial-scale=1'>
-            <title>Automation Created</title>
-            <style>
-                * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-                body {{
-                    font-family: -apple-system, BlinkMacSystemFont,
-                                 'Segoe UI', Arial, sans-serif;
-                    background: #0f0f1a;
-                    color: #e0e0e0;
-                    min-height: 100vh;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    flex-direction: column;
-                    padding: 30px;
-                    text-align: center;
-                }}
-                .icon  {{ font-size: 72px; margin-bottom: 24px; }}
-                h1     {{ color: #00e676; font-size: 26px; margin-bottom: 12px; }}
-                p      {{ color: #aaa; font-size: 15px;
-                          line-height: 1.7; margin-bottom: 8px; }}
-                strong {{ color: #ffffff; }}
-                .back  {{
-                    margin-top: 30px;
-                    color: #e94560;
-                    text-decoration: none;
-                    font-size: 14px;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class='icon'>✅</div>
-            <h1>Automation Created!</h1>
+        content = f"""
+        <div class="result">
+            <div class="icon">✅</div>
+            <h2 style="color:#00e676">Automation Created!</h2>
             <p><strong>{entity}</strong> will now turn on automatically</p>
-            <p>every <strong>{day_name}</strong> at <strong>{time_str}</strong></p>
-            <p style='margin-top:16px; color:#666; font-size:13px'>
-                Find it in HA → Settings → Automations
+            <p>every <strong>{day_name}</strong>
+               at <strong>{time_str}</strong></p>
+            <p style="margin-top:16px; color:#3a5a7a; font-size:13px">
+                Settings → Automations → Cognitive Home: {entity}
             </p>
-            <a href='/' class='back'>← Back to suggestions</a>
-        </body>
-        </html>
+            <a href="/" class="back">← Back to suggestions</a>
+        </div>
         """
+        return _page(content, "Automation Created")
     else:
-        return _simple_page(
-            "❌ Failed",
-            "Could not create the automation. Check addon logs.",
-            "#ff5252"
-        )
+        content = """
+        <div class="result">
+            <div class="icon">❌</div>
+            <h2 style="color:#ff5252">Something went wrong</h2>
+            <p>Could not create the automation.</p>
+            <p>Check the addon logs for details.</p>
+            <a href="/" class="back">← Try again</a>
+        </div>
+        """
+        return _page(content, "Error")
 
 
 @app.route("/reject/<path:suggestion_id>")
@@ -302,48 +399,34 @@ def reject(suggestion_id: str):
     if suggestion_id in pending_suggestions:
         del pending_suggestions[suggestion_id]
 
-    return _simple_page(
-        "👍 Got it!",
-        "Suggestion dismissed. I'll keep learning your routines.",
-        "#e0e0e0"
-    )
-
-
-def _simple_page(title: str, message: str, color: str) -> str:
-    """Helper for simple one-message pages."""
-    return f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta name='viewport' content='width=device-width, initial-scale=1'>
-        <style>
-            * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-            body {{
-                font-family: -apple-system, BlinkMacSystemFont,
-                             'Segoe UI', Arial, sans-serif;
-                background: #0f0f1a;
-                color: #e0e0e0;
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                flex-direction: column;
-                padding: 30px;
-                text-align: center;
-            }}
-            h1  {{ color: {color}; font-size: 26px; margin-bottom: 12px; }}
-            p   {{ color: #888; font-size: 15px; }}
-            a   {{ margin-top: 24px; color: #e94560;
-                   text-decoration: none; font-size: 14px; }}
-        </style>
-    </head>
-    <body>
-        <h1>{title}</h1>
-        <p>{message}</p>
-        <a href='/'>← Back to suggestions</a>
-    </body>
-    </html>
+    content = """
+    <div class="result">
+        <div class="icon">👍</div>
+        <h2 style="color:#e0e0e0">Got it!</h2>
+        <p>Suggestion dismissed.</p>
+        <p>I'll keep learning your routines.</p>
+        <a href="/" class="back">← Back to suggestions</a>
+    </div>
     """
+    return _page(content, "Dismissed")
+
+
+@app.route("/reset")
+def reset_patterns():
+    """Wipes all learned patterns — use before a fresh demo."""
+    analyzer.reset()
+    pending_suggestions.clear()
+
+    content = """
+    <div class="result">
+        <div class="icon">🔄</div>
+        <h2 style="color:#00e676">Reset Complete</h2>
+        <p>All learned patterns have been cleared.</p>
+        <p>Toggle your devices to start fresh learning.</p>
+        <a href="/" class="back">← Back to suggestions</a>
+    </div>
+    """
+    return _page(content, "Reset")
 
 
 def start_server(port: int = 8099):
