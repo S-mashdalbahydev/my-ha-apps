@@ -1,3 +1,4 @@
+#!/usr/bin/with-contenv bashio
 set -e
 
 export OLLAMA_URL="$(bashio::config 'ollama_url')"
@@ -9,13 +10,7 @@ export LOOKAHEAD_MINUTES="$(bashio::config 'lookahead_minutes')"
 export FORCE_SUGGESTION_MODE="$(bashio::config 'force_suggestion_mode')"
 export DISABLE_WEEKDAY_CHECK="$(bashio::config 'disable_weekday_check')"
 export RESET_ON_STARTUP="$(bashio::config 'reset_on_startup')"
-
-HISTORY_DAYS_RAW="$(bashio::config 'history_days')"
-if [ "$HISTORY_DAYS_RAW" = "null" ] || [ -z "$HISTORY_DAYS_RAW" ]; then
-    export HISTORY_DAYS="0.1"
-else
-    export HISTORY_DAYS="$HISTORY_DAYS_RAW"
-fi
+export HISTORY_DAYS="$(bashio::config 'history_days')"
 
 bashio::log.info "Cognitive Home starting..."
 bashio::log.info "CHECK_INTERVAL=${CHECK_INTERVAL}"

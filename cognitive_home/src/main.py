@@ -6,14 +6,33 @@ from ha_client import HAClient
 from pattern_analyzer import PatternAnalyzer
 from suggestion_engine import SuggestionEngine
 
-CHECK_INTERVAL        = int(os.environ.get("CHECK_INTERVAL", "1"))
-MIN_OCCURRENCES       = int(os.environ.get("MIN_OCCURRENCES", "1"))
-CONFIDENCE_THRESHOLD  = float(os.environ.get("CONFIDENCE_THRESHOLD", "0.2"))
-LOOKAHEAD_MINUTES     = int(os.environ.get("LOOKAHEAD_MINUTES", "60"))
+
+def _safe_float(val: str, default: float) -> float:
+    try:
+        if val in (None, "null", "None", ""):
+            return default
+        return float(val)
+    except (ValueError, TypeError):
+        return default
+
+
+def _safe_int(val: str, default: int) -> int:
+    try:
+        if val in (None, "null", "None", ""):
+            return default
+        return int(val)
+    except (ValueError, TypeError):
+        return default
+
+
+CHECK_INTERVAL        = _safe_int(os.environ.get("CHECK_INTERVAL"), 1)
+MIN_OCCURRENCES       = _safe_int(os.environ.get("MIN_OCCURRENCES"), 1)
+CONFIDENCE_THRESHOLD  = _safe_float(os.environ.get("CONFIDENCE_THRESHOLD"), 0.2)
+LOOKAHEAD_MINUTES     = _safe_int(os.environ.get("LOOKAHEAD_MINUTES"), 60)
 FORCE_SUGGESTION_MODE = os.environ.get("FORCE_SUGGESTION_MODE", "true").lower() == "true"
 DISABLE_WEEKDAY_CHECK = os.environ.get("DISABLE_WEEKDAY_CHECK", "true").lower() == "true"
 RESET_ON_STARTUP      = os.environ.get("RESET_ON_STARTUP", "false").lower() == "true"
-HISTORY_DAYS          = float(os.environ.get("HISTORY_DAYS", "0.1"))
+HISTORY_DAYS          = _safe_float(os.environ.get("HISTORY_DAYS"), 0.1)
 
 ha        = HAClient()
 analyzer  = PatternAnalyzer()
