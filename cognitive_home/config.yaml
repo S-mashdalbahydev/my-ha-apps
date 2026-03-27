@@ -15,10 +15,18 @@ options:
   ollama_model: "SmolLM2:360M"
   check_interval_minutes: 1
   min_occurrences: 1
+  confidence_threshold: 0.2
+  lookahead_minutes: 60
+  force_suggestion_mode: true
+  disable_weekday_check: true
 schema:
   ollama_url: str
   ollama_model: str
   check_interval_minutes: int
   min_occurrences: int
+  confidence_threshold: float
+  lookahead_minutes: int
+  force_suggestion_mode: bool
+  disable_weekday_check: bool
 map:
   - data:rw
