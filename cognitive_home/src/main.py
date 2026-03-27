@@ -1,7 +1,7 @@
 import os
 import time
 import schedule
-import web_server
+import cognitive_web
 from ha_client import HAClient
 from pattern_analyzer import PatternAnalyzer
 from suggestion_engine import SuggestionEngine
@@ -19,8 +19,8 @@ analyzer  = PatternAnalyzer()
 suggester = SuggestionEngine()
 
 # Share instances with web_server
-web_server.ha       = ha
-web_server.analyzer = analyzer
+cognitive_web.ha       = ha
+cognitive_web.analyzer = analyzer
 
 sent_today = set()
 
@@ -99,7 +99,7 @@ def check_and_suggest():
         )
 
         # Register with web server so user can confirm
-        web_server.register_pending(suggestion_id, pattern)
+        cognitive_web.register_pending(suggestion_id, pattern)
 
         sent_today.add(suggestion_id)
         print(f"[main] Suggestion sent for {entity_id}")
@@ -151,7 +151,7 @@ if __name__ == "__main__":
         print(f"[main] DISABLE_WEEKDAY      = {DISABLE_WEEKDAY_CHECK}")
 
         # Start web server for confirmations
-        web_server.start_server(port=8099)
+        cognitive_web.start_server(port=8099)
 
         print("[main] Running initial learning...")
         learn_patterns()
