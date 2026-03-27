@@ -20,6 +20,7 @@ options:
   force_suggestion_mode: true
   disable_weekday_check: true
   reset_on_startup: false
+  history_days: 0.1
 schema:
   ollama_url: str
   ollama_model: str
@@ -30,6 +31,7 @@ schema:
   force_suggestion_mode: bool
   disable_weekday_check: bool
   reset_on_startup: bool
+  history_days: float
 map:
   - data:rw
 ports:

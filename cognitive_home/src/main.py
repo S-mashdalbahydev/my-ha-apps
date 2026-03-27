@@ -13,6 +13,7 @@ LOOKAHEAD_MINUTES     = int(os.environ.get("LOOKAHEAD_MINUTES", "60"))
 FORCE_SUGGESTION_MODE = os.environ.get("FORCE_SUGGESTION_MODE", "true").lower() == "true"
 DISABLE_WEEKDAY_CHECK = os.environ.get("DISABLE_WEEKDAY_CHECK", "true").lower() == "true"
 RESET_ON_STARTUP      = os.environ.get("RESET_ON_STARTUP", "false").lower() == "true"
+HISTORY_DAYS          = float(os.environ.get("HISTORY_DAYS", "0.1"))
 
 ha        = HAClient()
 analyzer  = PatternAnalyzer()
@@ -33,12 +34,13 @@ def learn_patterns():
         print("[main] No target entities found, skipping")
         return
 
-    print(f"[main] Analyzing {len(target_entities)} entities...")
+    print(f"[main] Analyzing {len(target_entities)} entities "
+          f"(last {HISTORY_DAYS} days)...")
 
     for entity_id in target_entities:
         print(f"[main] Analyzing: {entity_id}")
         try:
-            history = ha.get_history(entity_id, days=1)
+            history = ha.get_history(entity_id, days=HISTORY_DAYS)
             if not history:
                 print(f"[main] No history for {entity_id}, skipping")
                 continue
@@ -137,10 +139,10 @@ if __name__ == "__main__":
         print(f"[main] FORCE_SUGGESTION     = {FORCE_SUGGESTION_MODE}")
         print(f"[main] DISABLE_WEEKDAY      = {DISABLE_WEEKDAY_CHECK}")
         print(f"[main] RESET_ON_STARTUP     = {RESET_ON_STARTUP}")
+        print(f"[main] HISTORY_DAYS         = {HISTORY_DAYS}")
 
-        # Auto reset if flag is on
         if RESET_ON_STARTUP:
-            print("[main] RESET_ON_STARTUP is true — clearing old patterns")
+            print("[main] Clearing old patterns...")
             analyzer.reset()
 
         cognitive_web.start_server(port=8099)

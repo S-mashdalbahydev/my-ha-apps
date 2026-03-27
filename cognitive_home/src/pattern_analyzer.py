@@ -3,14 +3,14 @@ import os
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 
-# Riyadh = UTC+3 — change if needed
 LOCAL_TZ = timezone(timedelta(hours=3))
 
 
 class PatternAnalyzer:
     def __init__(self, data_path="/data/patterns.json"):
-        self.data_path = data_path
-        self.patterns = self._load_patterns()
+        self.data_path    = data_path
+        self.seq_path     = data_path.replace("patterns.json", "sequences.json")
+        self.patterns     = self._load_patterns()
         self.sequence_counts = defaultdict(lambda: defaultdict(int))
 
     def _load_patterns(self):
@@ -24,12 +24,18 @@ class PatternAnalyzer:
             json.dump(self.patterns, f, indent=2)
 
     def reset(self):
-        """Wipes all learned patterns from memory and disk."""
+        """Wipes all learned patterns and sequences from memory and disk."""
         self.patterns = {}
         self.sequence_counts.clear()
+
         if os.path.exists(self.data_path):
             os.remove(self.data_path)
             print("[pattern_analyzer] patterns.json deleted")
+
+        if os.path.exists(self.seq_path):
+            os.remove(self.seq_path)
+            print("[pattern_analyzer] sequences.json deleted")
+
         print("[pattern_analyzer] Reset complete")
 
     def _build_key(self, entity_id: str, hour: int, weekday: int) -> str:
@@ -62,6 +68,10 @@ class PatternAnalyzer:
         self.sequence_counts[prev_key][curr_key] += 1
 
     def analyze(self, history: list, entity_id: str, min_occurrences: int = 3):
+        # Reset sequence counts before each analysis
+        # so we don't accumulate stale data across runs
+        self.sequence_counts.clear()
+
         flat_history = []
         for record in history:
             if isinstance(record, list):
@@ -78,7 +88,6 @@ class PatternAnalyzer:
                 continue
 
             try:
-                # Convert UTC timestamp to local time
                 dt_utc   = datetime.fromisoformat(state_change["last_changed"])
                 dt_local = dt_utc.astimezone(LOCAL_TZ)
             except Exception:
