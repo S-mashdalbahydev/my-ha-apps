@@ -30,3 +30,5 @@ schema:
   disable_weekday_check: bool
 map:
   - data:rw
+ports:
+  8099/tcp: 8099

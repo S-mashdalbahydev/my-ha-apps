@@ -1,6 +1,7 @@
 import os
 import time
 import schedule
+import web_server
 from ha_client import HAClient
 from pattern_analyzer import PatternAnalyzer
 from suggestion_engine import SuggestionEngine
@@ -13,9 +14,13 @@ LOOKAHEAD_MINUTES     = int(os.environ.get("LOOKAHEAD_MINUTES", "60"))
 FORCE_SUGGESTION_MODE = os.environ.get("FORCE_SUGGESTION_MODE", "true").lower() == "true"
 DISABLE_WEEKDAY_CHECK = os.environ.get("DISABLE_WEEKDAY_CHECK", "true").lower() == "true"
 
-ha       = HAClient()
-analyzer = PatternAnalyzer()
+ha        = HAClient()
+analyzer  = PatternAnalyzer()
 suggester = SuggestionEngine()
+
+# Share instances with web_server
+web_server.ha       = ha
+web_server.analyzer = analyzer
 
 sent_today = set()
 
@@ -73,9 +78,9 @@ def check_and_suggest():
     print(f"[main] Found {len(upcoming)} upcoming patterns")
 
     for pattern in upcoming:
-        entity_id  = pattern["entity_id"]
-        hour       = pattern["hour"]
-        weekday    = pattern["weekday"]
+        entity_id = pattern["entity_id"]
+        hour      = pattern["hour"]
+        weekday   = pattern["weekday"]
 
         suggestion_id = f"{entity_id}|{hour}|{weekday}"
 
@@ -85,15 +90,21 @@ def check_and_suggest():
 
         suggestion_text = suggester.generate_suggestion(pattern)
 
+        # Send notification with link to confirmation page
         ha.send_notification(
             title="💡 Smart Suggestion",
-            message=suggestion_text,
+            message=f"{suggestion_text}\n\n"
+                    f"👉 Confirm at: http://homeassistant.local:8099",
             notification_id=suggestion_id
         )
+
+        # Register with web server so user can confirm
+        web_server.register_pending(suggestion_id, pattern)
 
         sent_today.add(suggestion_id)
         print(f"[main] Suggestion sent for {entity_id}")
 
+    # Sequence suggestions
     top_sequences = analyzer.get_top_sequences(min_count=MIN_OCCURRENCES)
 
     for sequence in top_sequences:
@@ -106,7 +117,8 @@ def check_and_suggest():
 
         ha.send_notification(
             title="🔗 Sequence Suggestion",
-            message=suggestion_text,
+            message=f"{suggestion_text}\n\n"
+                    f"👉 Confirm at: http://homeassistant.local:8099",
             notification_id=seq_id
         )
 
@@ -137,6 +149,9 @@ if __name__ == "__main__":
         print(f"[main] LOOKAHEAD_MINUTES    = {LOOKAHEAD_MINUTES}")
         print(f"[main] FORCE_SUGGESTION     = {FORCE_SUGGESTION_MODE}")
         print(f"[main] DISABLE_WEEKDAY      = {DISABLE_WEEKDAY_CHECK}")
+
+        # Start web server for confirmations
+        web_server.start_server(port=8099)
 
         print("[main] Running initial learning...")
         learn_patterns()
