@@ -33,6 +33,7 @@ FORCE_SUGGESTION_MODE = os.environ.get("FORCE_SUGGESTION_MODE", "true").lower() 
 DISABLE_WEEKDAY_CHECK = os.environ.get("DISABLE_WEEKDAY_CHECK", "true").lower() == "true"
 RESET_ON_STARTUP      = os.environ.get("RESET_ON_STARTUP", "false").lower() == "true"
 HISTORY_DAYS          = _safe_float(os.environ.get("HISTORY_DAYS"), 0.1)
+INGRESS_ENTRY = os.environ.get("INGRESS_ENTRY", "")
 
 ha        = HAClient()
 analyzer  = PatternAnalyzer()
@@ -40,6 +41,7 @@ suggester = SuggestionEngine()
 
 cognitive_web.ha       = ha
 cognitive_web.analyzer = analyzer
+cognitive_web.ingress_entry = INGRESS_ENTRY
 
 sent_today = set()
 

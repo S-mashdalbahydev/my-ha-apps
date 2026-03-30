@@ -1,12 +1,16 @@
 import threading
-from flask import Flask
+from flask import Flask, request
 
 app = Flask(__name__)
+
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_prefix=1)
 
 ha       = None
 analyzer = None
 
 pending_suggestions = {}
+ingress_entry = ""
 
 DAYS = {
     0: "Monday",   1: "Tuesday",  2: "Wednesday",
@@ -35,8 +39,21 @@ def register_pending(suggestion_id: str, pattern: dict):
     print(f"[cognitive_web] Registered: {suggestion_id}")
 
 
+def _base_url() -> str:
+    """
+    Returns the correct base URL for links.
+    When running through HA Ingress, links need the ingress prefix.
+    When running directly, links are just /
+    """
+    if ingress_entry:
+        return ingress_entry.rstrip("/")
+    return ""
+
+
 def _page(content: str, title: str = "Cognitive Home") -> str:
     """Base HTML wrapper with consistent styling."""
+    base = _base_url()
+
     return f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -44,6 +61,7 @@ def _page(content: str, title: str = "Cognitive Home") -> str:
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{title}</title>
+        <base href="{base}/">
         <style>
             * {{ box-sizing: border-box; margin: 0; padding: 0; }}
 
@@ -84,7 +102,6 @@ def _page(content: str, title: str = "Cognitive Home") -> str:
                 padding: 24px 16px;
             }}
 
-            /* ── Empty state ── */
             .empty {{
                 text-align: center;
                 padding: 60px 20px;
@@ -97,7 +114,6 @@ def _page(content: str, title: str = "Cognitive Home") -> str:
             }}
             .empty p {{ color: #5a7a9a; font-size: 14px; line-height: 1.6; }}
 
-            /* ── Suggestion card ── */
             .card {{
                 background: #13192b;
                 border: 1px solid #1e2d4a;
@@ -114,9 +130,7 @@ def _page(content: str, title: str = "Cognitive Home") -> str:
                 margin-bottom: 18px;
             }}
 
-            .card-header .badge {{
-                font-size: 22px;
-            }}
+            .card-header .badge {{ font-size: 22px; }}
 
             .card-header h2 {{
                 font-size: 17px;
@@ -134,7 +148,6 @@ def _page(content: str, title: str = "Cognitive Home") -> str:
                 font-weight: 500;
             }}
 
-            /* ── Info rows ── */
             .info-grid {{
                 background: #0d1220;
                 border-radius: 10px;
@@ -155,7 +168,6 @@ def _page(content: str, title: str = "Cognitive Home") -> str:
             .info-label {{ color: #5a7a9a; }}
             .info-value {{ color: #e0e0e0; font-weight: 500; }}
 
-            /* ── Confidence bar ── */
             .conf-bar {{
                 height: 4px;
                 background: #1a2535;
@@ -169,7 +181,6 @@ def _page(content: str, title: str = "Cognitive Home") -> str:
                 border-radius: 2px;
             }}
 
-            /* ── Question ── */
             .question {{
                 font-size: 14px;
                 color: #8a9ab5;
@@ -178,7 +189,6 @@ def _page(content: str, title: str = "Cognitive Home") -> str:
                 line-height: 1.5;
             }}
 
-            /* ── Buttons ── */
             .buttons {{
                 display: grid;
                 grid-template-columns: 1fr 1fr;
@@ -214,14 +224,13 @@ def _page(content: str, title: str = "Cognitive Home") -> str:
                 border: 1px solid #5c0d0d;
             }}
 
-            /* ── Result pages ── */
             .result {{
                 text-align: center;
                 padding: 50px 20px;
             }}
             .result .icon {{ font-size: 64px; margin-bottom: 20px; }}
             .result h2 {{ font-size: 24px; margin-bottom: 10px; }}
-            .result p  {{
+            .result p {{
                 color: #5a7a9a;
                 font-size: 14px;
                 line-height: 1.7;
@@ -255,7 +264,6 @@ def _page(content: str, title: str = "Cognitive Home") -> str:
 
 @app.route("/")
 def index():
-    # Filter only unconfirmed suggestions
     active = {
         sid: p for sid, p in pending_suggestions.items()
         if not p.get("confirmed", False)
@@ -319,10 +327,10 @@ def index():
             </p>
 
             <div class="buttons">
-                <a href="/confirm/{sid}" class="btn btn-yes">
+                <a href="confirm/{sid}" class="btn btn-yes">
                     ✅ Yes, automate it
                 </a>
-                <a href="/reject/{sid}" class="btn btn-no">
+                <a href="reject/{sid}" class="btn btn-no">
                     ❌ No thanks
                 </a>
             </div>
@@ -342,7 +350,7 @@ def confirm(suggestion_id: str):
             <div class="icon">⚠️</div>
             <h2 style="color:#f5a623">Already Handled</h2>
             <p>This suggestion has already been confirmed or dismissed.</p>
-            <a href="/" class="back">← Back to suggestions</a>
+            <a href="./" class="back">← Back to suggestions</a>
         </div>
         """
         return _page(content, "Already Handled")
@@ -373,7 +381,7 @@ def confirm(suggestion_id: str):
             <p style="margin-top:16px; color:#3a5a7a; font-size:13px">
                 Settings → Automations → Cognitive Home: {entity}
             </p>
-            <a href="/" class="back">← Back to suggestions</a>
+            <a href="./" class="back">← Back to suggestions</a>
         </div>
         """
         return _page(content, "Automation Created")
@@ -384,7 +392,7 @@ def confirm(suggestion_id: str):
             <h2 style="color:#ff5252">Something went wrong</h2>
             <p>Could not create the automation.</p>
             <p>Check the addon logs for details.</p>
-            <a href="/" class="back">← Try again</a>
+            <a href="./" class="back">← Try again</a>
         </div>
         """
         return _page(content, "Error")
@@ -405,7 +413,7 @@ def reject(suggestion_id: str):
         <h2 style="color:#e0e0e0">Got it!</h2>
         <p>Suggestion dismissed.</p>
         <p>I'll keep learning your routines.</p>
-        <a href="/" class="back">← Back to suggestions</a>
+        <a href="./" class="back">← Back to suggestions</a>
     </div>
     """
     return _page(content, "Dismissed")
@@ -417,13 +425,21 @@ def reset_patterns():
     analyzer.reset()
     pending_suggestions.clear()
 
+    # Also clear sent_today in main
+    try:
+        import main as main_module
+        main_module.sent_today.clear()
+        print("[cognitive_web] sent_today cleared")
+    except Exception:
+        pass
+
     content = """
     <div class="result">
         <div class="icon">🔄</div>
         <h2 style="color:#00e676">Reset Complete</h2>
         <p>All learned patterns have been cleared.</p>
         <p>Toggle your devices to start fresh learning.</p>
-        <a href="/" class="back">← Back to suggestions</a>
+        <a href="./" class="back">← Back to suggestions</a>
     </div>
     """
     return _page(content, "Reset")

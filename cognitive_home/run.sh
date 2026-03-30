@@ -12,6 +12,8 @@ export DISABLE_WEEKDAY_CHECK="$(bashio::config 'disable_weekday_check')"
 export RESET_ON_STARTUP="$(bashio::config 'reset_on_startup')"
 export HISTORY_DAYS="$(bashio::config 'history_days')"
 
+export INGRESS_ENTRY="$(bashio::addon.ingress_entry)"
+
 bashio::log.info "Cognitive Home starting..."
 bashio::log.info "CHECK_INTERVAL=${CHECK_INTERVAL}"
 bashio::log.info "MIN_OCCURRENCES=${MIN_OCCURRENCES}"
@@ -21,5 +23,7 @@ bashio::log.info "FORCE_SUGGESTION_MODE=${FORCE_SUGGESTION_MODE}"
 bashio::log.info "DISABLE_WEEKDAY_CHECK=${DISABLE_WEEKDAY_CHECK}"
 bashio::log.info "RESET_ON_STARTUP=${RESET_ON_STARTUP}"
 bashio::log.info "HISTORY_DAYS=${HISTORY_DAYS}"
+bashio::log.info "INGRESS_ENTRY=${INGRESS_ENTRY}"
+
 
 exec python3 -u /app/src/main.py

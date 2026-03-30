@@ -10,6 +10,12 @@ startup: services
 homeassistant_api: true
 hassio_api: true
 hassio_role: default
+
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:home-automation
+panel_title: Cognitive Home
+
 options:
   ollama_url: "http://ollama:11434/api/chat"
   ollama_model: "SmolLM2:360M"
