@@ -84,68 +84,67 @@ class PatternAnalyzer:
             return
 
         self.sequence_counts[prev_key][curr_key] += 1
-
     def analyze(self, history: list, entity_id: str, min_occurrences: int = 3):
-        
-        # Reset sequence counts before each full analysis
-        # so we don't accumulate stale data across runs
         self.sequence_counts.clear()
 
-        # Step 1: Flatten nested list
         flat_history = []
         for record in history:
             if isinstance(record, list):
                 flat_history.extend(record)
 
-        # Step 2: Sort oldest to newest
         flat_history.sort(key=lambda x: x.get("last_changed", ""))
+
+    # ── ADD THIS DEBUG ──
+        print(f"[pattern_analyzer] Total events in history: {len(flat_history)}")
+        on_count = sum(1 for e in flat_history if e.get("state") == "on")
+        print(f"[pattern_analyzer] 'on' events found: {on_count}")
+        for e in flat_history:
+            if e.get("state") == "on":
+                print(f"[pattern_analyzer] ON event: {e.get('last_changed')}")
+    # ────────────────────
 
         prev_event = None
 
         for state_change in flat_history:
-
-            # Step 3a: Skip non-active states
             active_states = ["on", "cool", "heat", "auto", "home", "playing"]
             if state_change.get("state") not in active_states:
-                prev_event = state_change  # still track for sequence
+                prev_event = state_change
                 continue
 
-            # Step 3b: Convert UTC → local time
             try:
                 dt_utc   = datetime.fromisoformat(state_change["last_changed"])
                 dt_local = dt_utc.astimezone(LOCAL_TZ)
             except Exception:
                 continue
 
-            # Step 3c: Build pattern key
             hour    = dt_local.hour
             weekday = dt_local.weekday()
             key     = self._build_key(entity_id, hour, weekday)
 
-            # Step 3d: Update Bayesian confidence
+        # ── ADD THIS DEBUG ──
+            print(f"[pattern_analyzer] Processing: state={state_change.get('state')} "
+              f"local_time={dt_local.strftime('%H:%M %A')} "
+              f"key={key} "
+              f"disable_weekday={self.disable_weekday}")
+        # ────────────────────
+
             self._update_bayesian_confidence(key, entity_id, hour, weekday)
-
-            # Step 3e: Update sequence counts
             self._update_sequence(prev_event, state_change)
-
             prev_event = state_change
 
-        # Step 4: Remove weak patterns
         self.patterns = {
-            k: v for k, v in self.patterns.items()
-            if v["occurrences"] >= min_occurrences
-        }
+        k: v for k, v in self.patterns.items()
+        if v["occurrences"] >= min_occurrences
+    }
 
-        # Step 5: Save to disk
         self._save_patterns()
 
-        # Debug output
         print(f"[pattern_analyzer] Total patterns: {len(self.patterns)}")
         for k, v in self.patterns.items():
             print(f"[pattern_analyzer] {k} | "
-                  f"occurrences={v['occurrences']} | "
-                  f"confidence={v['confidence']:.2f} | "
-                  f"confirmed={v['confirmed']}")
+              f"occurrences={v['occurrences']} | "
+              f"confidence={v['confidence']:.2f} | "
+              f"confirmed={v['confirmed']}")
 
         return self.patterns
 
