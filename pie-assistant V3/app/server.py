@@ -20,7 +20,7 @@ EMBED_MODEL      = os.getenv("EMBED_MODEL",       "nomic-embed-text")
 
 CHUNK_SIZE    = int(os.getenv("CHUNK_SIZE",    "600"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "40"))
-TOP_K_CHUNKS  = int(os.getenv("TOP_K_CHUNKS",  "2"))
+TOP_K_CHUNKS  = int(os.getenv("TOP_K_CHUNKS",  "5"))
 SCRAPE_PAGES  = int(os.getenv("SCRAPE_PAGES",  "1"))
 SNIPPET_PAGES = int(os.getenv("SNIPPET_PAGES", "4"))
 
@@ -29,7 +29,7 @@ EMBED_TIMEOUT   = int(os.getenv("EMBED_TIMEOUT",   "60"))
 CHAT_TIMEOUT    = int(os.getenv("CHAT_TIMEOUT",    "120"))
 TEMPERATURE     = float(os.getenv("TEMPERATURE",   "0.2"))
 NUM_CTX         = int(os.getenv("NUM_CTX",         "8192"))
-NUM_PREDICT     = int(os.getenv("NUM_PREDICT",     "80"))
+NUM_PREDICT     = int(os.getenv("NUM_PREDICT",     "128"))
 
 # Derived
 TOTAL_RESULTS = SCRAPE_PAGES + SNIPPET_PAGES
@@ -308,8 +308,15 @@ def generate_answer(question: str, chunks: list[dict]) -> tuple[str, float]:
         for i, c in enumerate(chunks, 1)
     ]
     context_text = "\n\n".join(context_parts)[:8000]
+    
+    print("\n[CONTEXT] Retrieved Chunks:")
+    print("-" * 50)
+    print(context_text)
+    print("-" * 50)
 
+    current_date = time.strftime("%Y-%m-%d")
     system_prompt = (
+        f"Today is {current_date}. "
         "You are a helpful assistant. "
         "Give a straight-forward, concise answer. "
         "Do NOT repeat the question. "
