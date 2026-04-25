@@ -1,5 +1,5 @@
-name: "pie assistantv2"
-slug: "pie_assistantv2"
+name: "pie assistantv3"
+slug: "pie_assistantv3"
 description: "HTTP agent that answers questions using SearXNG + page scraping + FAISS retrieval + Ollama."
 version: "0.3.0"
 init: false
