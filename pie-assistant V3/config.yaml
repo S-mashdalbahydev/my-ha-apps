@@ -1,0 +1,51 @@
+name: "pie assistantv2"
+slug: "pie_assistantv2"
+description: "HTTP agent that answers questions using SearXNG + page scraping + FAISS retrieval + Ollama."
+version: "0.2.1"
+init: false
+
+arch:
+  - aarch64
+  - amd64
+
+startup: services
+
+ingress: true
+ingress_port: 5055
+panel_icon: mdi:robot
+
+options:
+  searx_url: "http://searxng:8080/search"
+  ollama_url: "http://ollama:11434/api/chat"
+  ollama_embed_url: "http://ollama:11434/api/embed"
+  model: "smollm2:360m"
+  embed_model: "nomic-embed-text"
+  scrape_pages: 1
+  snippet_pages: 4
+  chunk_size: 600
+  chunk_overlap: 40
+  top_k_chunks: 2
+  temperature: 0.2
+  num_predict: 80
+  num_ctx: 8192
+  request_timeout: 10
+  embed_timeout: 60
+  chat_timeout: 120
+
+schema:
+  searx_url: str
+  ollama_url: str
+  ollama_embed_url: str
+  model: str
+  embed_model: str
+  scrape_pages: int
+  snippet_pages: int
+  chunk_size: int
+  chunk_overlap: int
+  top_k_chunks: int
+  temperature: float
+  num_predict: int
+  num_ctx: int
+  request_timeout: int
+  embed_timeout: int
+  chat_timeout: int
