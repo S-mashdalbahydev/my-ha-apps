@@ -208,27 +208,41 @@ def build_context_pool(results: list[dict]) -> list[dict]:
     scraped_count = 0
     idx = 0
 
-    # 1. Try to fulfill the SCRAPE_PAGES quota
-    while scraped_count < SCRAPE_PAGES and idx < len(results):
+    # 1. Try to fulfill the SCRAPE_PAGES quota by finding successful scrapes
+    while scraped_count < SCRAPE_PAGES and len(contexts) < TOTAL_RESULTS and idx < len(results):
         res = results[idx]
         text = scrape_page(res["url"])
         
         if text is None:
-            # Captcha detected! Skip this one for scraping and try the next result
+            # Captcha detected! Skip full scrape, but keep the snippet and try NEXT result for scraping
             print(f"[SCRAPER] Captcha detected on: {res['url']}")
-            print(f"          Status: SKIPPING to next result...")
+            print(f"          Status: ADDING SNIPPET and continuing search for full page...")
+            contexts.append({
+                "source_title": res["title"],
+                "source_url":   res["url"],
+                "source_type":  "snippet", # Not a full scrape
+                "text":         res["snippet"] or res["title"],
+            })
             idx += 1
             continue
             
         if not text:
-            # Generic error or empty, fallback to snippet but count as a "scraped" attempt
+            # Generic error or empty, fallback to snippet and CONTINUE searching for a full scrape
             print(f"[SCRAPER] Scrape failed/empty on: {res['url']}")
-            print(f"          Status: FALLING BACK to search snippet.")
-            text = res["snippet"]
-        else:
-            print(f"[SCRAPER] Successfully scraped: {res['url']}")
-            preview = text[:300].replace('\n', ' ')
-            print(f"          Text Preview: {preview}...")
+            print(f"          Status: ADDING SNIPPET and continuing search for full page...")
+            contexts.append({
+                "source_title": res["title"],
+                "source_url":   res["url"],
+                "source_type":  "snippet",
+                "text":         res["snippet"] or res["title"],
+            })
+            idx += 1
+            continue
+        
+        # Successful scrape!
+        print(f"[SCRAPER] Successfully scraped: {res['url']}")
+        preview = text[:300].replace('\n', ' ')
+        print(f"          Text Preview: {preview}...")
 
         contexts.append({
             "source_title": res["title"],
