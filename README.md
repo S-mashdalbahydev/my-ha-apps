@@ -2,8 +2,6 @@
 
 This repository contains the core local applications for the **Pie Assistant** project, built as a privacy-first cognitive voice assistant designed to run completely offline on **Home Assistant OS** using a Raspberry Pi 5. 
 
-For a complete and in-depth breakdown of user requirements, system architecture, and algorithmic design, please refer to the official project report document **M16_GP1 (3) (1).pdf**. The foundational architecture layout and project signatures can also be cross-referenced with **image_97a2a0.jpg**.
-
 ---
 
 ## 🚀 Core Applications
